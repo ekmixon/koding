@@ -62,7 +62,7 @@ def get_rundir():
         return os.environ["XDG_RUNTIME_DIR"]
 
     if "HOME" in os.environ:
-        return "%s/.cache/lxc/run/" % os.environ["HOME"]
+        return f'{os.environ["HOME"]}/.cache/lxc/run/'
 
     raise Exception("Unable to find a runtime directory")
 

@@ -62,8 +62,7 @@ class ProcessCheck(AgentCheck):
         )
 
         if Platform.is_linux():
-            procfs_path = init_config.get('procfs_path')
-            if procfs_path:
+            if procfs_path := init_config.get('procfs_path'):
                 psutil.PROCFS_PATH = procfs_path
 
         # Process cache, indexed by instance
@@ -142,14 +141,10 @@ class ProcessCheck(AgentCheck):
         a list, the result being indexed in a dictionary by the accessor name
         """
 
-        if accessors is None:
-            result = None
-        else:
-            result = {}
-
+        result = None if accessors is None else {}
         # Ban certain method that we know fail
         if method == 'memory_info_ex'\
-                and (Platform.is_win32() or Platform.is_solaris()):
+                    and (Platform.is_win32() or Platform.is_solaris()):
             return result
         elif method == 'num_fds' and not Platform.is_unix():
             return result
@@ -191,10 +186,9 @@ class ProcessCheck(AgentCheck):
                 new_process = True
                 try:
                     self.process_cache[name][pid] = psutil.Process(pid)
-                    self.log.debug('New process in cache: %s' % pid)
-                # Skip processes dead in the meantime
+                    self.log.debug(f'New process in cache: {pid}')
                 except psutil.NoSuchProcess:
-                    self.warning('Process %s disappeared while scanning' % pid)
+                    self.warning(f'Process {pid} disappeared while scanning')
                     # reset the PID cache now, something changed
                     self.last_pid_cache_ts[name] = 0
                     continue
@@ -266,17 +260,15 @@ class ProcessCheck(AgentCheck):
         proc_state = self.get_process_state(name, pids)
 
         # FIXME 6.x remove the `name` tag
-        tags.extend(['process_name:%s' % name, name])
+        tags.extend([f'process_name:{name}', name])
 
         self.log.debug('ProcessCheck: process %s analysed', name)
         self.gauge('system.processes.number', len(pids), tags=tags)
 
         for attr, mname in ATTR_TO_METRIC.iteritems():
-            vals = [x for x in proc_state[attr] if x is not None]
-            # skip []
-            if vals:
+            if vals := [x for x in proc_state[attr] if x is not None]:
                 # FIXME 6.x: change this prefix?
-                self.gauge('system.processes.%s' % mname, sum(vals), tags=tags)
+                self.gauge(f'system.processes.{mname}', sum(vals), tags=tags)
 
         self._process_service_check(name, len(pids), instance.get('thresholds', None))
 
@@ -287,7 +279,7 @@ class ProcessCheck(AgentCheck):
                    CRITICAL             out of the critical thresholds
                    WARNING              out of the warning thresholds
         '''
-        tag = ["process:%s" % name]
+        tag = [f"process:{name}"]
         status = AgentCheck.OK
         message_str = "PROCS %s: %s processes found for %s"
         status_str = {

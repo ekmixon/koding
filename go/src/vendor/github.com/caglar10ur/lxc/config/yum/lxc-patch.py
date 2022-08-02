@@ -30,7 +30,6 @@ requires_api_version = '2.0'
 plugin_type = (TYPE_INTERACTIVE,)
 
 def posttrans_hook(conduit):
-    pkgs = []
     patch_required = False
 
     # If we aren't root, we can't have updated anything
@@ -43,9 +42,7 @@ def posttrans_hook(conduit):
         return
 
     tmp = confpkgs.split(",")
-    for confpkg in tmp:
-        pkgs.append(confpkg.strip())
-
+    pkgs = [confpkg.strip() for confpkg in tmp]
     conduit.info(2, "lxc-patch: checking if updated pkgs need patching...")
     ts = conduit.getTsInfo()
     for tsmem in ts.getMembers():

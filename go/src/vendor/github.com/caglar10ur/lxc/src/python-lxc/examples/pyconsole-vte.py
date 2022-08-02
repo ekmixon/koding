@@ -61,18 +61,15 @@ def vte_con(ct, ttynum):
     print("Console done")
 
 if __name__ == '__main__':
-    ttynum = -1
     if len(sys.argv) < 2:
-        sys.exit("Usage: %s container-name [ttynum]" % sys.argv[0])
-    if len(sys.argv) > 2:
-        ttynum = int(sys.argv[2])
-
+        sys.exit(f"Usage: {sys.argv[0]} container-name [ttynum]")
+    ttynum = int(sys.argv[2]) if len(sys.argv) > 2 else -1
     ct = lxc.Container(sys.argv[1])
 
     print("Container:%s tty:%d" % (ct.name, ttynum))
     if not ct.defined:
-        sys.exit("Container %s not defined" % ct.name)
+        sys.exit(f"Container {ct.name} not defined")
     if not ct.running:
-        sys.exit("Container %s not running" % ct.name)
+        sys.exit(f"Container {ct.name} not running")
 
     vte_con(ct, ttynum)

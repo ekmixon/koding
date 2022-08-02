@@ -40,17 +40,23 @@ def _test():
     for subpackage in ['', 'altsrc']:
         coverprofile = 'cli.coverprofile'
         if subpackage != '':
-            coverprofile = '{}.coverprofile'.format(subpackage)
+            coverprofile = f'{subpackage}.coverprofile'
 
         coverprofiles.append(coverprofile)
 
-        _run('go test -v'.split() + [
-            '-coverprofile={}'.format(coverprofile),
-            ('{}/{}'.format(PACKAGE_NAME, subpackage)).rstrip('/')
-        ])
+        _run(
+            (
+                'go test -v'.split()
+                + [
+                    f'-coverprofile={coverprofile}',
+                    f'{PACKAGE_NAME}/{subpackage}'.rstrip('/'),
+                ]
+            )
+        )
+
 
     combined_name = _combine_coverprofiles(coverprofiles)
-    _run('go tool cover -func={}'.format(combined_name).split())
+    _run(f'go tool cover -func={combined_name}'.split())
     os.remove(combined_name)
 
 
@@ -63,7 +69,7 @@ def _vet():
 
 
 def _run(command):
-    print('runtests: {}'.format(' '.join(command)), file=sys.stderr)
+    print(f"runtests: {' '.join(command)}", file=sys.stderr)
     check_call(command)
 
 
@@ -85,7 +91,7 @@ def _combine_coverprofiles(coverprofiles):
 
     for coverprofile in coverprofiles:
         with open(coverprofile, 'r') as infile:
-            for line in infile.readlines():
+            for line in infile:
                 if not line.startswith('mode: '):
                     combined.write(line)
 

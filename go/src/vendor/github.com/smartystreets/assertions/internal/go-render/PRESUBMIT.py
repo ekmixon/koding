@@ -40,11 +40,12 @@ def PreCommitGo(input_api, output_api, pcg_mode):
   if os.getenv('PRESUBMIT_BUILDER', ''):
     cmd.extend(['-r', 'HEAD~1'])
   return input_api.RunTests([
-    input_api.Command(
-      name='pre-commit-go: %s' % ', '.join(pcg_mode),
-      cmd=cmd,
-      kwargs={},
-      message=error_type),
+      input_api.Command(
+          name=f"pre-commit-go: {', '.join(pcg_mode)}",
+          cmd=cmd,
+          kwargs={},
+          message=error_type,
+      )
   ])
 
 
@@ -53,16 +54,13 @@ def header(input_api):
   current_year = int(input_api.time.strftime('%Y'))
   allowed_years = (str(s) for s in reversed(xrange(2011, current_year + 1)))
   years_re = '(' + '|'.join(allowed_years) + ')'
-  license_header = (
-    r'.*? Copyright %(year)s The Chromium Authors\. '
-    r'All rights reserved\.\n'
-    r'.*? Use of this source code is governed by a BSD-style license '
-    r'that can be\n'
-    r'.*? found in the LICENSE file\.(?: \*/)?\n'
-  ) % {
-    'year': years_re,
-  }
-  return license_header
+  return (r'.*? Copyright %(year)s The Chromium Authors\. '
+          r'All rights reserved\.\n'
+          r'.*? Use of this source code is governed by a BSD-style license '
+          r'that can be\n'
+          r'.*? found in the LICENSE file\.(?: \*/)?\n') % {
+              'year': years_re,
+          }
 
 
 def source_file_filter(input_api):

@@ -40,8 +40,11 @@ print("Getting instance for '%s'" % CONTAINER_NAME)
 container = lxc.Container(CONTAINER_NAME)
 
 # A few basic checks of the current state
-assert(container.config_file_name == "%s/%s/config" %
-       (lxc.default_config_path, CONTAINER_NAME))
+assert (
+    container.config_file_name
+    == f"{lxc.default_config_path}/{CONTAINER_NAME}/config"
+)
+
 assert(not container.defined)
 assert(container.init_pid == -1)
 assert(container.name == CONTAINER_NAME)
@@ -105,7 +108,7 @@ assert(container.state == "RUNNING")
 
 ## Checking IP address
 print("Getting the interface names")
-assert(set(container.get_interfaces()) == set(('lo', 'eth0')))
+assert set(container.get_interfaces()) == {'lo', 'eth0'}
 
 ## Checking IP address
 print("Getting the IP addresses")

@@ -40,7 +40,7 @@ class ContainerNetwork(object):
         self.container = container
         self.index = index
 
-        for key in self.container.get_keys("lxc.network.%s" % self.index):
+        for key in self.container.get_keys(f"lxc.network.{self.index}"):
             if "." in key:
                 self.props[key.replace(".", "_")] = key
             else:
@@ -98,19 +98,15 @@ class ContainerNetwork(object):
 
     def __clear_network_item(self, key):
         if key in ("ipv4", "ipv6"):
-            return self.container.clear_config_item("lxc.network.%s.%s" % (
-                                                    self.index, key))
+            return self.container.clear_config_item(f"lxc.network.{self.index}.{key}")
         else:
-            return self.container.set_config_item("lxc.network.%s.%s" % (
-                                                    self.index, key), "")
+            return self.container.set_config_item(f"lxc.network.{self.index}.{key}", "")
 
     def __get_network_item(self, key):
-        return self.container.get_config_item("lxc.network.%s.%s" % (
-                                              self.index, key))
+        return self.container.get_config_item(f"lxc.network.{self.index}.{key}")
 
     def __set_network_item(self, key, value):
-        return self.container.set_config_item("lxc.network.%s.%s" % (
-                                              self.index, key), value)
+        return self.container.set_config_item(f"lxc.network.{self.index}.{key}", value)
 
 
 class ContainerNetworkList():
@@ -124,9 +120,7 @@ class ContainerNetworkList():
         return ContainerNetwork(self.container, index)
 
     def __len__(self):
-        values = self.container.get_config_item("lxc.network")
-
-        if values:
+        if values := self.container.get_config_item("lxc.network"):
             return len(values)
         else:
             return 0
@@ -134,15 +128,16 @@ class ContainerNetworkList():
     def add(self, network_type):
         index = len(self)
 
-        return self.container.set_config_item("lxc.network.%s.type" % index,
-                                              network_type)
+        return self.container.set_config_item(
+            f"lxc.network.{index}.type", network_type
+        )
 
     def remove(self, index):
         count = len(self)
         if index >= count:
             raise IndexError("list index out of range")
 
-        return self.container.clear_config_item("lxc.network.%s" % index)
+        return self.container.clear_config_item(f"lxc.network.{index}")
 
 
 class Container(_lxc.Container):
@@ -166,8 +161,8 @@ class Container(_lxc.Container):
         if not self.running:
             return False
 
-        if os.path.exists("/sys/class/net/%s/phy80211/name" % name):
-            with open("/sys/class/net/%s/phy80211/name" % name) as fd:
+        if os.path.exists(f"/sys/class/net/{name}/phy80211/name"):
+            with open(f"/sys/class/net/{name}/phy80211/name") as fd:
                 phy = fd.read().strip()
 
             if subprocess.call(['iw', 'phy', phy, 'set', 'netns',
@@ -189,13 +184,24 @@ class Container(_lxc.Container):
         if not destname:
             destname = name
 
-        if not os.path.exists("/sys/class/net/%s/" % name):
-            return False
-
-        return subprocess.call(['ip', 'link', 'set',
-                                'dev', name,
-                                'netns', str(self.init_pid),
-                                'name', destname]) == 0
+        return (
+            subprocess.call(
+                [
+                    'ip',
+                    'link',
+                    'set',
+                    'dev',
+                    name,
+                    'netns',
+                    str(self.init_pid),
+                    'name',
+                    destname,
+                ]
+            )
+            == 0
+            if os.path.exists(f"/sys/class/net/{name}/")
+            else False
+        )
 
     def append_config_item(self, key, value):
         """
@@ -238,11 +244,13 @@ class Container(_lxc.Container):
             Clone the current container.
         """
 
-        args = {}
-        args['newname'] = newname
-        args['flags'] = flags
-        args['newsize'] = newsize
-        args['hookargs'] = hookargs
+        args = {
+            'newname': newname,
+            'flags': flags,
+            'newsize': newsize,
+            'hookargs': hookargs,
+        }
+
         if config_path:
             args['config_path'] = config_path
         if bdevtype:
@@ -260,21 +268,20 @@ class Container(_lxc.Container):
             Attach to console of running container.
         """
 
-        if not self.running:
-            return False
-
-        return _lxc.Container.console(self, ttynum, stdinfd, stdoutfd,
-                                      stderrfd, escape)
+        return (
+            _lxc.Container.console(
+                self, ttynum, stdinfd, stdoutfd, stderrfd, escape
+            )
+            if self.running
+            else False
+        )
 
     def console_getfd(self, ttynum=-1):
         """
             Attach to console of running container.
         """
 
-        if not self.running:
-            return False
-
-        return _lxc.Container.console_getfd(self, ttynum)
+        return _lxc.Container.console_getfd(self, ttynum) if self.running else False
 
     def get_cgroup_item(self, key):
         """
@@ -283,10 +290,7 @@ class Container(_lxc.Container):
         """
         value = _lxc.Container.get_cgroup_item(self, key)
 
-        if value is False:
-            return False
-        else:
-            return value.rstrip("\n")
+        return False if value is False else value.rstrip("\n")
 
     def get_config_item(self, key):
         """
@@ -358,10 +362,7 @@ class Container(_lxc.Container):
             On failure, returns False.
         """
 
-        if _lxc.Container.rename(self, new_name):
-            return Container(new_name)
-
-        return False
+        return Container(new_name) if _lxc.Container.rename(self, new_name) else False
 
     def set_config_item(self, key, value):
         """
@@ -396,8 +397,11 @@ class Container(_lxc.Container):
         elif (isinstance(value, list) and isinstance(new_value, list) and
                 set(value) == set(new_value)):
             return True
-        elif (isinstance(value, str) and isinstance(new_value, list) and
-                set([value]) == set(new_value)):
+        elif (
+            isinstance(value, str)
+            and isinstance(new_value, list)
+            and {value} == set(new_value)
+        ):
             return True
         elif old_value:
             set_key(key, old_value)
@@ -438,7 +442,7 @@ def list_containers(active=True, defined=True,
             return tuple()
 
     if as_object:
-        return tuple([Container(name, config_path) for name in entries])
+        return tuple(Container(name, config_path) for name in entries)
     else:
         return entries
 

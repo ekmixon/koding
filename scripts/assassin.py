@@ -98,8 +98,7 @@ def kill(proc, usage):
 
         if KILL_ENABLED and proc.name() in WHITE_LIST:
 
-            slack_it("Killing: *%s* (*PID %s*) usage was: %s" %
-                    (proc.name(), proc.pid, usage))
+            slack_it(f"Killing: *{proc.name()}* (*PID {proc.pid}*) usage was: {usage}")
 
             proc.kill()
 
@@ -128,7 +127,7 @@ def checks():
         bad_guys = {}
         return
 
-    for proc in top_process[0:5]:
+    for proc in top_process[:5]:
         if proc.pid in bad_guys:
             bad_guys[proc.pid]['counter'] += 1
             bad_guys[proc.pid]['cpu'] += proc.dict['cpu_percent']

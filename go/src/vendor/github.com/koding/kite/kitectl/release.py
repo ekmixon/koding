@@ -71,7 +71,7 @@ def build_osx(binpath, version):
 def build_linux(binpath, version):
     workdir = tempfile.mkdtemp()
     try:
-        debname = "kite-%s-linux" % version
+        debname = f"kite-{version}-linux"
         packagedir = os.path.join(workdir, debname)
         os.mkdir(packagedir)
         debiandir = os.path.join(packagedir, "DEBIAN")
@@ -84,7 +84,7 @@ def build_linux(binpath, version):
         bindir = os.path.join(usrdir, "bin")
         os.mkdir(bindir)
         shutil.move(binpath, bindir)
-        debfile = "%s.deb" % debname
+        debfile = f"{debname}.deb"
         subprocess.check_call(["fakeroot", "dpkg-deb", "--build",
                                packagedir, debfile])
         return debfile
@@ -220,10 +220,8 @@ def sha1_file(path):
     chunk_size = 1024 * 1024  # 1M
     sha1_checksum = hashlib.sha1()
     with open(path, "rb") as f:
-        byte = f.read(chunk_size)
-        while byte:
+        while byte := f.read(chunk_size):
             sha1_checksum.update(byte)
-            byte = f.read(chunk_size)
     return sha1_checksum.hexdigest()
 
 

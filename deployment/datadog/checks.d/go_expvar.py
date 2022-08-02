@@ -46,8 +46,13 @@ DEFAULT_RATE_MEMSTAT_METRICS = [
     "PauseTotalNs", "NumGC",
 ]
 
-DEFAULT_METRICS = [{PATH: "memstats/%s" % path, TYPE: GAUGE} for path in DEFAULT_GAUGE_MEMSTAT_METRICS] +\
-    [{PATH: "memstats/%s" % path, TYPE: RATE} for path in DEFAULT_RATE_MEMSTAT_METRICS]
+DEFAULT_METRICS = [
+    {PATH: f"memstats/{path}", TYPE: GAUGE}
+    for path in DEFAULT_GAUGE_MEMSTAT_METRICS
+] + [
+    {PATH: f"memstats/{path}", TYPE: RATE}
+    for path in DEFAULT_RATE_MEMSTAT_METRICS
+]
 
 
 class GoExpvar(AgentCheck):
@@ -67,7 +72,7 @@ class GoExpvar(AgentCheck):
             raise Exception('GoExpvar instance missing "expvar_url" value.')
 
         tags = instance.get('tags', [])
-        tags.append("expvar_url:%s" % url)
+        tags.append(f"expvar_url:{url}")
         data = self._get_data(url)
         metrics = DEFAULT_METRICS + instance.get("metrics", [])
         max_metrics = instance.get("max_returned_metrics", DEFAULT_MAX_METRICS)
@@ -115,18 +120,18 @@ class GoExpvar(AgentCheck):
             alias = metric.get(ALIAS)
 
             if not path:
-                self.warning("Metric %s has no path" % metric)
+                self.warning(f"Metric {metric} has no path")
                 continue
 
             if metric_type not in SUPPORTED_TYPES:
-                self.warning("Metric type %s not supported for this check" % metric_type)
+                self.warning(f"Metric type {metric_type} not supported for this check")
                 continue
 
             keys = path.split("/")
             values = self.deep_get(data, keys)
 
             if len(values) == 0:
-                self.warning("No results matching path %s" % path)
+                self.warning(f"No results matching path {path}")
                 continue
 
             tag_by_path = alias is not None
@@ -134,14 +139,14 @@ class GoExpvar(AgentCheck):
             for traversed_path, value in values:
                 actual_path = ".".join(traversed_path)
                 if tag_by_path:
-                    metric_tags.append("path:%s" % actual_path)
+                    metric_tags.append(f"path:{actual_path}")
 
                 metric_name = alias or self.normalize(actual_path, METRIC_NAMESPACE, fix_case=True)
 
                 try:
                     float(value)
                 except ValueError:
-                    self.log.warning("Unreportable value for path %s: %s" % (path,value))
+                    self.log.warning(f"Unreportable value for path {path}: {value}")
                     continue
 
                 if count >= max_metrics:
@@ -185,7 +190,7 @@ class GoExpvar(AgentCheck):
         try:
             key_rex = re.compile(regex)
         except Exception:
-            self.warning("Cannot compile regex: %s" % regex)
+            self.warning(f"Cannot compile regex: {regex}")
             return []
 
         results = []
